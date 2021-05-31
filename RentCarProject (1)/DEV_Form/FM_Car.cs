@@ -12,7 +12,7 @@ using System.IO;
 namespace DEV_Form
 {
 
-    public partial class FM_Car : Form, ChildInterface
+    public partial class FM_Car : BaseMDIChildForm
     {
         private SqlConnection Connect = null; // 접속 정보 객체 명명
         // 접속 주소 
@@ -67,7 +67,6 @@ namespace DEV_Form
             }
 
         }
-
         private void btnSearch_Click_1(object sender, EventArgs e)
         {
             try
@@ -201,9 +200,19 @@ namespace DEV_Form
                 Connect.Close();
             }
         }
-
         private void btnRefresh1_Click(object sender, EventArgs e)
         {
+            if (MessageBox.Show("검색 조건을 초기화하시겠습니까?", "Delete", MessageBoxButtons.YesNo) == DialogResult.No) return;
+            else
+            {
+
+                txtCarName.Text = string.Empty;
+                txtCarCode.Text = string.Empty;
+                cboRentCost.SelectedIndex = 0;
+                dgvGridCar.Columns.Clear();
+                dgvGridCar.Refresh();
+            }
+
             /*if (this.cboRentCost.SelectedIndex == 0) return;
             if (MessageBox.Show("검색 조건을 초기화하시겠습니까?", "Delete", MessageBoxButtons.YesNo) == DialogResult.No) return;
             
@@ -211,7 +220,6 @@ namespace DEV_Form
             {
             }*/
         }
-
         #region KeyDown Enter for Search
         private void txtCarName_KeyDown(object sender, KeyEventArgs e)
         {
@@ -229,26 +237,17 @@ namespace DEV_Form
         }
         #endregion
 
+
+
         #region Interface
-        public void Inquire()
+        public override void DoNew()
         {
+            base.DoNew();
+            DataRow dr = ((DataTable)dgvGridCar.DataSource).NewRow();
+            ((DataTable)dgvGridCar.DataSource).Rows.Add(dr);   // 그리드 뷰에 테이블을 추가하는 것이 아닌
+                                                               // 데이터 소스를 추가하고 그것을 가져오는 방식
         }
-
-        public void DoNew()
-        {
-        }
-
-        public void Delete()
-        {
-        }
-
-        public void Save()
-        {
-        }
-        #endregion
-
-        #region why...?
-        /*public override void Inquire()
+        public override void Inquire()
       {
           base.Inquire();
 
@@ -256,13 +255,13 @@ namespace DEV_Form
           DBHelper helper = new DBHelper(false);
           try
           {
-              string sUserId = t.Text;
-              string sUserName = txtUserName.Text;
+              string sUserId = txtCarCode.Text;
+              string sUserName = txtCarName.Text;
 
               DataTable Dttemp = new DataTable();
-              Dttemp = helper.FillTable("SP_USER_JJG_S1", CommandType.StoredProcedure
-                  , helper.CreateParameter("USERID", sUserId)
-                  , helper.CreateParameter("USERNAME", sUserName));
+              Dttemp = helper.FillTable("SP_4_Car_I1", CommandType.StoredProcedure
+                  , helper.CreateParameter("CARCODE", sUserId)
+                  , helper.CreateParameter("CARNAME", sUserName));
 
               if (Dttemp.Rows.Count == 0)
               {
@@ -286,13 +285,7 @@ namespace DEV_Form
           }
 
       }
-      public override void DoNew()
-      {
-          base.DoNew();
-          DataRow dr = ((DataTable)dgvGridCar.DataSource).NewRow();
-          ((DataTable)dgvGridCar.DataSource).Rows.Add(dr);   // 그리드 뷰에 테이블을 추가하는 것이 아닌
-                                                             // 데이터 소스를 추가하고 그것을 가져오는 방식
-      }
+      
       public override void Delete()
       {
           base.Delete();
@@ -300,11 +293,86 @@ namespace DEV_Form
           int iSelectIndex = dgvGridCar.CurrentCell.RowIndex;
           DataTable dtTemp = (DataTable)dgvGridCar.DataSource; // 데이터 소스의 데이터를 임시 테이블에 넣고
           dtTemp.Rows[iSelectIndex].Delete();                     // 그 테이블을 삭제하는 형식
-      }*/
-        #endregion
+      }
 
-        private void btnLoadPic_Click(object sender, EventArgs e)
+        public override void Save()
         {
+            base.Save();
+            string sUserId = string.Empty; ;
+            string sUserName = string.Empty; ;
+            string sPassword = string.Empty; ;
+
+            DataTable dataTemp1 = ((DataTable)dgvGridCar.DataSource).GetChanges();// 기존에 데이터 소스에 저장된 내용과 바뀐 부분을 체크하는 함수
+            if (dataTemp1 == null) return; // 바뀐 내용들만 dtTemp에 추가
+
+            if (MessageBox.Show("데이터를 등록 하시겠습니까?", "데이터 저장", MessageBoxButtons.YesNo) == DialogResult.No) return;
+            DBHelper helper = new DBHelper(true);
+            try
+            {
+                //트랜잭션 설정, 데이터 테이블의 상태 체크
+                foreach (DataRow drRow in dataTemp1.Rows)
+                {
+                    switch (drRow.RowState)
+                    {
+                        case DataRowState.Deleted:
+                            drRow.RejectChanges();
+                            sUserId = drRow["USERID"].ToString();
+                            helper.ExecuteNoneQuery("SP_USER_JJG_D1", CommandType.StoredProcedure, helper.CreateParameter("USERID", sUserId));
+                            break;
+
+                        case DataRowState.Added:
+                            sUserId = drRow["USERID"].ToString();
+                            sUserName = drRow["USERNAME"].ToString();
+                            sPassword = drRow["PW"].ToString();
+
+                            helper.ExecuteNoneQuery("SP_USER_JJG_I1", CommandType.StoredProcedure,
+                                                    helper.CreateParameter("USERID", sUserId),
+                                                    helper.CreateParameter("USERNAME", sUserName),
+                                                    helper.CreateParameter("PASSWORD", sPassword),
+                                                    helper.CreateParameter("MAKER", Common.LogInID)
+                                                    );
+                            break;
+
+                        case DataRowState.Modified:
+
+                            sUserId = drRow["USERID"].ToString();
+                            sUserName = drRow["USERNAME"].ToString();
+                            sPassword = drRow["PW"].ToString();
+                            helper.ExecuteNoneQuery("SP_USER_JJG_U1", CommandType.StoredProcedure,
+                                                   helper.CreateParameter("USERID", sUserId),
+                                                   helper.CreateParameter("USERNAME", sUserName),
+                                                   helper.CreateParameter("PASSWORD", sPassword),
+                                                   helper.CreateParameter("EDITOR", Common.LogInID)
+                                                   );
+                            break;
+
+                    }
+                }
+                //성공 시 DB COMMIT
+                helper.Commit();
+                //메세지
+                MessageBox.Show("정상적으로 등록 하였습니다.");
+
+                //재조회
+                Inquire();
+            }
+            catch (Exception ex)
+            {
+                //트랜잭션 롤백
+                helper.Rollback();
+                // 메세지
+                MessageBox.Show("데이터 등록에 실패하였습니다.");
+            }
+            finally
+            {
+                //DB Close
+                helper.Close();
+            }
+        }
+            #endregion
+
+            private void btnLoadPic_Click(object sender, EventArgs e)
+             {
             string sImagefile = string.Empty;
             //이미지 불러오기 및 저장, 파일 탐색기 호출
 
@@ -438,7 +506,11 @@ namespace DEV_Form
             }
             catch (Exception ex)
             {
-
+                MessageBox.Show("오류입니다. 관리자에게 문의하세요", ToString());
+            }
+            finally
+            {
+                Connect.Close();
             }
         }
 
