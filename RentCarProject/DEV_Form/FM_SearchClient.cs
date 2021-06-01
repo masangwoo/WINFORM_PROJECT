@@ -125,6 +125,7 @@ namespace DEV_Form
                 #endregion
 
             }
+
             catch (Exception ex)
             {
                 MessageBox.Show(ex.ToString());
@@ -134,6 +135,7 @@ namespace DEV_Form
             {
                 Connect.Close();
             }
+
         }
 
         private void txtClient_KeyDown(object sender, KeyEventArgs e)
@@ -172,6 +174,6 @@ namespace DEV_Form
             this.Close();
         }
 
-       
+       }
     }
-}
+

@@ -40,7 +40,6 @@ namespace DEV_Form
             this.rdoLpg = new System.Windows.Forms.RadioButton();
             this.rdoElec = new System.Windows.Forms.RadioButton();
             this.txtCarCode = new System.Windows.Forms.TextBox();
-            this.btnSearch = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.chkWait = new System.Windows.Forms.CheckBox();
@@ -85,7 +84,6 @@ namespace DEV_Form
             this.groupBox3.Controls.Add(this.txtCarName);
             this.groupBox3.Controls.Add(this.groupBox4);
             this.groupBox3.Controls.Add(this.txtCarCode);
-            this.groupBox3.Controls.Add(this.btnSearch);
             this.groupBox3.Controls.Add(this.label1);
             this.groupBox3.Controls.Add(this.label2);
             this.groupBox3.Controls.Add(this.chkWait);
@@ -107,7 +105,7 @@ namespace DEV_Form
             // 
             // btnRefresh1
             // 
-            this.btnRefresh1.Location = new System.Drawing.Point(993, 97);
+            this.btnRefresh1.Location = new System.Drawing.Point(1096, 97);
             this.btnRefresh1.Margin = new System.Windows.Forms.Padding(4);
             this.btnRefresh1.Name = "btnRefresh1";
             this.btnRefresh1.Size = new System.Drawing.Size(139, 39);
@@ -123,7 +121,6 @@ namespace DEV_Form
             this.txtCarName.Name = "txtCarName";
             this.txtCarName.Size = new System.Drawing.Size(199, 27);
             this.txtCarName.TabIndex = 15;
-            this.txtCarName.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtCarCode_KeyDown);
             // 
             // groupBox4
             // 
@@ -217,19 +214,6 @@ namespace DEV_Form
             this.txtCarCode.Name = "txtCarCode";
             this.txtCarCode.Size = new System.Drawing.Size(199, 27);
             this.txtCarCode.TabIndex = 1;
-            this.txtCarCode.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtCarName_KeyDown);
-            // 
-            // btnSearch
-            // 
-            this.btnSearch.Location = new System.Drawing.Point(1139, 97);
-            this.btnSearch.Margin = new System.Windows.Forms.Padding(4);
-            this.btnSearch.Name = "btnSearch";
-            this.btnSearch.Size = new System.Drawing.Size(96, 39);
-            this.btnSearch.TabIndex = 13;
-            this.btnSearch.Text = "조회";
-            this.btnSearch.UseVisualStyleBackColor = true;
-            this.btnSearch.Click += new System.EventHandler(this.btnSearch_Click_1);
-            this.btnSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtCarName_KeyDown);
             // 
             // label1
             // 
@@ -270,7 +254,7 @@ namespace DEV_Form
             this.dtpStart.Name = "dtpStart";
             this.dtpStart.Size = new System.Drawing.Size(129, 27);
             this.dtpStart.TabIndex = 4;
-            this.dtpStart.Value = new System.DateTime(1991, 1, 1, 0, 0, 0, 0);
+            this.dtpStart.Value = new System.DateTime(1800, 1, 3, 0, 0, 0, 0);
             // 
             // label5
             // 
@@ -328,11 +312,11 @@ namespace DEV_Form
             this.btnRefresh.Controls.Add(this.btnLoadPic);
             this.btnRefresh.Controls.Add(this.picCarImg);
             this.btnRefresh.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.btnRefresh.Location = new System.Drawing.Point(3, 393);
+            this.btnRefresh.Location = new System.Drawing.Point(3, 448);
             this.btnRefresh.Margin = new System.Windows.Forms.Padding(4);
             this.btnRefresh.Name = "btnRefresh";
             this.btnRefresh.Padding = new System.Windows.Forms.Padding(4);
-            this.btnRefresh.Size = new System.Drawing.Size(1936, 408);
+            this.btnRefresh.Size = new System.Drawing.Size(1936, 353);
             this.btnRefresh.TabIndex = 18;
             this.btnRefresh.TabStop = false;
             this.btnRefresh.Text = "이미지 조회";
@@ -390,7 +374,7 @@ namespace DEV_Form
             this.groupBox5.Margin = new System.Windows.Forms.Padding(4);
             this.groupBox5.Name = "groupBox5";
             this.groupBox5.Padding = new System.Windows.Forms.Padding(4);
-            this.groupBox5.Size = new System.Drawing.Size(1936, 370);
+            this.groupBox5.Size = new System.Drawing.Size(1936, 425);
             this.groupBox5.TabIndex = 19;
             this.groupBox5.TabStop = false;
             this.groupBox5.Text = "차량 정보";
@@ -406,7 +390,7 @@ namespace DEV_Form
             this.dgvGridCar.Name = "dgvGridCar";
             this.dgvGridCar.RowHeadersWidth = 51;
             this.dgvGridCar.RowTemplate.Height = 25;
-            this.dgvGridCar.Size = new System.Drawing.Size(1928, 342);
+            this.dgvGridCar.Size = new System.Drawing.Size(1928, 397);
             this.dgvGridCar.TabIndex = 3;
             this.dgvGridCar.CellClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvGrid_CellClick);
             // 
@@ -447,7 +431,6 @@ namespace DEV_Form
         private System.Windows.Forms.RadioButton rdoLpg;
         private System.Windows.Forms.RadioButton rdoElec;
         private System.Windows.Forms.TextBox txtCarCode;
-        private System.Windows.Forms.Button btnSearch;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.CheckBox chkWait;

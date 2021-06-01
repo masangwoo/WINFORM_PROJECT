@@ -14,75 +14,51 @@ namespace DEV_Form
 
     public partial class FM_Car : BaseMDIChildForm
     {
-        private SqlConnection Connect = null; // 접속 정보 객체 명명
-        // 접속 주소 
-        private string strConn = "Data Source=222.235.141.8; Initial Catalog=AppDev;User ID=kfqs1;Password=1234";
+        
 
         public FM_Car()
         {
             InitializeComponent();
         }
-        /*        #region ComboBox And GridView Search,Add,Insert,UpdateDelete,Save*/
         private void FM_ITEM_Load(object sender, EventArgs e)
         {
+            DBHelper helper = new DBHelper(false);
             try
             {
-                #region ComboBox Connect
-                // 콤보박스 품목 상세 데이터 조회 및 추가
-                // 접속 정보 커넥선 에 등록 및 객체 선언
-                Connect = new SqlConnection(strConn);
-                Connect.Open();
-                #endregion
+                string sCarsize = cboRentCost.Text;
 
-                if (Connect.State != System.Data.ConnectionState.Open)
-                {
-                    MessageBox.Show("데이터 베이스 연결에 실패 하였습니다.");
-                    return;
-                }
+                DataTable DataTemp = new DataTable();
+                DataTemp = helper.FillTable("SP_4_CAR_S3", CommandType.StoredProcedure ,helper.CreateParameter("CARSIZE",sCarsize) );
 
-                #region ComboBox Search
-                SqlDataAdapter adapter = new SqlDataAdapter("SELECT DISTINCT CARSIZE FROM TB_4_CAR ", Connect);
-                DataTable dtTemp = new DataTable();
-                adapter.Fill(dtTemp);
-
-                cboRentCost.DataSource = dtTemp;
+                cboRentCost.DataSource = DataTemp;
                 cboRentCost.DisplayMember = "CARSIZE";
                 cboRentCost.ValueMember = "CARSIZE";
                 cboRentCost.Text = "";
-
-                #endregion
-
-                #region Fix Date
-                // 원하는 날짜 픽스
                 dtpEnd.Text = string.Format("{0:yyyy-MM-dd}", DateTime.Now);
-                #endregion
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-            finally
-            {
-                Connect.Close();
-            }
-
+            catch (Exception ex) { MessageBox.Show(ex.ToString());}
+            finally { helper.Close();}
         }
-        private void btnSearch_Click_1(object sender, EventArgs e)
+
+        private void btnRefresh1_Click(object sender, EventArgs e)
         {
+            if (MessageBox.Show("검색 조건을 초기화하시겠습니까?", "Delete", MessageBoxButtons.YesNo) == DialogResult.No) return;
+            else
+            {
+                txtCarName.Text = string.Empty;
+                txtCarCode.Text = string.Empty;
+                cboRentCost.SelectedIndex = 0;
+                dgvGridCar.Columns.Clear();
+                dgvGridCar.Refresh();
+            }
+        }
+
+        public override void Inquire()
+        {
+            base.Inquire();
+            DBHelper helper = new DBHelper(false);
             try
             {
-                dgvGridCar.DataSource = null; // 그리드의 데이터 소스를 초기화 한다.
-                Connect = new SqlConnection(strConn);
-                Connect.Open();
-
-                if (Connect.State != System.Data.ConnectionState.Open)
-                {
-                    MessageBox.Show("데이터 베이스 연결에 실패 하였습니다.");
-                    return;
-                }
-
-                #region Parameter Prod
-                // 조회를 위한 파라매터 설정
                 string sCarCode = txtCarCode.Text;
                 string sCarType = "";
                 string sCarName = txtCarName.Text;
@@ -90,6 +66,12 @@ namespace DEV_Form
                 string sEndDate = dtpEnd.Text;
                 string sCarsize = cboRentCost.Text;
                 string sUseFlag = "";
+                string sCarNum = "";
+                string sCarRegist = "";
+                string sCarMaker = "";
+                string sRentPrice = "";
+                string sEditor = "";
+
 
                 if (rdoElec.Checked == true) sCarType = "Elec";
                 else if (rdoGas.Checked == true) sCarType = "Gas";
@@ -99,138 +81,201 @@ namespace DEV_Form
                 else sCarType = "";
 
                 if (chkWait.Checked == true) sUseFlag = "W";
-                #endregion
 
-                #region Search SQL
+                DataTable DataTemp = new DataTable();
+                DataTemp = helper.FillTable("SP_4_CAR_S1", CommandType.StoredProcedure
+                    , helper.CreateParameter("CARCODE", sCarCode)
+                    , helper.CreateParameter("CARTYPE", sCarType)
+                    , helper.CreateParameter("CARNAME", sCarName)
+                    , helper.CreateParameter("CARSIZE", sCarsize)
+                    , helper.CreateParameter("CARNUM", sCarNum)
+                    , helper.CreateParameter("USEFLAG", sUseFlag)
+                    , helper.CreateParameter("CARREGIST", sCarRegist)
+                    , helper.CreateParameter("CARMAKER", sCarMaker)
+                    , helper.CreateParameter("RENTPRICE", sRentPrice)
+                    , helper.CreateParameter("STARTDATE", sStartDate)
+                    , helper.CreateParameter("EDITOR", sEditor)
+                    , helper.CreateParameter("ENDDATE", sEndDate));
 
-                SqlDataAdapter Adapter = new SqlDataAdapter
-                    (" SELECT CARCODE,                         " +
-                     "        CARTYPE,                         " +
-                     "        CARNAME,                         " +
-                     "        CARSIZE,                         " +
-                     "        CARNUM,                         " +
-                     "        CASE                             " +
-                     "        WHEN USEFLAG = 'U' THEN '렌트중' " +
-                     "        WHEN USEFLAG = 'F' THEN '정비중' " +
-                     "        WHEN USEFLAG = 'W' THEN '대기중' " +
-                     "        END AS  USEFLAG,                 " +
-                     "        CARREGIST,                       " +
-                     "        CARMAKER,                        " +
-                     "        RENTPRICE,                       " +
-                     "        MAKER,                           " +
-                     "        MAKEDATE,                        " +
-                     /*"        EDITOR                           " +*/
-                     "        EDITDATE                         " +
-                     "   FROM TB_4_CAR WITH(NOLOCK)        " +
-                    $"  WHERE CARCODE LIKE '%{sCarCode}%'      " + // CODE 조회
-                    $"    AND CARTYPE LIKE '%{sCarType}%'      " + // 라디오 박스 조회
-                    $"    AND CARNAME LIKE '%{sCarName}%'      " + // NAME 조회
-                    $"    AND CARSIZE LIKE '%{sCarsize}%'      " + // 콤보 박스 조회
-                    $"    AND USEFLAG LIKE '%{sUseFlag}%'      " + // 체크박스 조회
-                    $"    AND CARREGIST BETWEEN '{sStartDate}' " + // 날짜 조회
-                    $"    AND '{sEndDate}'", Connect);
-
-
-                #endregion
-
-                #region Bring DataTB
-
-                DataTable dtTemp = new DataTable();
-                Adapter.Fill(dtTemp);
-                #endregion
-
-                if (dtTemp.Rows.Count == 0)
+                if (DataTemp.Rows.Count == 0)
                 {
                     dgvGridCar.DataSource = null;
+                    MessageBox.Show("조회할 데이터가 없습니다.");
                     return;
                 }
-                dgvGridCar.DataSource = dtTemp; // 데이터 그리드 뷰에 데이터 테이블 등록
+                else
+                {
+                    //그리드 뷰에 데이터 삽입 
+                    dgvGridCar.DataSource = DataTemp;
+                }
+                dgvGridCar.Columns["CARCODE"].HeaderText = "차량 ID";     dgvGridCar.Columns[0].Width = 100;
+                dgvGridCar.Columns["CARTYPE"].HeaderText = "연료";        dgvGridCar.Columns[1].Width = 100;
+                dgvGridCar.Columns["CARNAME"].HeaderText = "차종";        dgvGridCar.Columns[2].Width = 100;
+                dgvGridCar.Columns["CARSIZE"].HeaderText = "사이즈";      dgvGridCar.Columns[3].Width = 100;
+                dgvGridCar.Columns["CARNUM"].HeaderText = "차량 번호";    dgvGridCar.Columns[4].Width = 100;
+                dgvGridCar.Columns["USEFLAG"].HeaderText = "상태";        dgvGridCar.Columns[5].Width = 100;
+                dgvGridCar.Columns["CARREGIST"].HeaderText = "구매 일시"; dgvGridCar.Columns[6].Width = 200;
+                dgvGridCar.Columns["CARMAKER"].HeaderText = "제조사";     dgvGridCar.Columns[7].Width = 200;
+                dgvGridCar.Columns["RENTPRICE"].HeaderText = "렌트가격";  dgvGridCar.Columns[8].Width = 200;
+                dgvGridCar.Columns["MAKER"].HeaderText = "등록자";        dgvGridCar.Columns[9].Width = 100;
+                dgvGridCar.Columns["MAKEDATE"].HeaderText = "등록 일시";  dgvGridCar.Columns[10].Width = 200;
+                dgvGridCar.Columns["EDITOR"].HeaderText = "수정자";       dgvGridCar.Columns[11].Width = 100;
+                dgvGridCar.Columns["EDITDATE"].HeaderText = "수정 일시";  dgvGridCar.Columns[12].Width = 100;
 
-                #region Change GridHeader Name
-                // 그리드뷰의 헤더 명칭 선언
-                dgvGridCar.Columns["CARCODE"].HeaderText = "차량 ID";
-                dgvGridCar.Columns["CARTYPE"].HeaderText = "차량 분류";
-                dgvGridCar.Columns["CARNAME"].HeaderText = "차량 종류";
-                dgvGridCar.Columns["CARSIZE"].HeaderText = "사이즈 분류";
-                dgvGridCar.Columns["CARNUM"].HeaderText = "차량 번호";
-                dgvGridCar.Columns["USEFLAG"].HeaderText = "상태";
-                dgvGridCar.Columns["CARREGIST"].HeaderText = "등록 일시";
-                dgvGridCar.Columns["CARMAKER"].HeaderText = "제조사";
-                dgvGridCar.Columns["RENTPRICE"].HeaderText = "렌트가격";
-                dgvGridCar.Columns["MAKER"].HeaderText = "등록자";
-                dgvGridCar.Columns["MAKEDATE"].HeaderText = "등록 일시";
-                /*                dgvGridCar.Columns["EDITOR"].HeaderText = "수정자";
-                */
-                dgvGridCar.Columns["EDITDATE"].HeaderText = "수정 일시";
-                #endregion
-
-                #region Columns Width
-                // 그리드 뷰의 폭 지정
-                dgvGridCar.Columns[0].Width = 100;
-                dgvGridCar.Columns[1].Width = 100;
-                dgvGridCar.Columns[2].Width = 100;
-                dgvGridCar.Columns[3].Width = 100;
-                dgvGridCar.Columns[4].Width = 200;
-                dgvGridCar.Columns[5].Width = 100;
-                dgvGridCar.Columns[6].Width = 200;
-                dgvGridCar.Columns[7].Width = 100;
-                dgvGridCar.Columns[8].Width = 200;
-                dgvGridCar.Columns[9].Width = 200;
-                dgvGridCar.Columns[10].Width = 200;
-                dgvGridCar.Columns[11].Width = 200;
-                #endregion
-
-                #region ReadOnly Parameters
-                // 컬럼의 수정 여부를 지정 한다
                 dgvGridCar.Columns["CARCODE"].ReadOnly = true;
                 dgvGridCar.Columns["MAKER"].ReadOnly = true;
                 dgvGridCar.Columns["MAKEDATE"].ReadOnly = true;
-                dgvGridCar.Columns["RENTPRICE"].ReadOnly = true;
                 dgvGridCar.Columns["EDITDATE"].ReadOnly = true;
-                #endregion
-
             }
             catch (Exception ex)
             {
-                MessageBox.Show("조회 실패", ToString());
+                MessageBox.Show(ex.ToString()); 
 
             }
             finally
             {
-                Connect.Close();
+                helper.Close();
             }
+
         }
-        private void btnRefresh1_Click(object sender, EventArgs e)
+
+        public override void DoNew()
         {
-            if (MessageBox.Show("검색 조건을 초기화하시겠습니까?", "Delete", MessageBoxButtons.YesNo) == DialogResult.No) return;
-            else
-            {
-                txtCarName.Text = string.Empty;
-                txtCarCode.Text = string.Empty;
-                picCarImg.Image = null;
-                cboRentCost.SelectedIndex = 0;
-                dgvGridCar.Columns.Clear();
-                dgvGridCar.Refresh();
-            }
+            base.DoNew();
+            DataRow dr = ((DataTable)dgvGridCar.DataSource).NewRow();
+            ((DataTable)dgvGridCar.DataSource).Rows.Add(dr);   // 그리드 뷰에 테이블을 추가하는 것이 아닌
+                                                               // 데이터 소스를 추가하고 그것을 가져오는 방식
         }
-        #region KeyDown Enter for Search
-        private void txtCarName_KeyDown(object sender, KeyEventArgs e)
+
+        public override void Delete()
         {
-            if (e.KeyCode == Keys.Enter)
-            {
-                btnSearch_Click_1(null, null);
-            }
+            base.Delete();
+            if (dgvGridCar.Rows.Count == 0) return;
+            int iSelectIndex = dgvGridCar.CurrentCell.RowIndex;
+            DataTable dtTemp = (DataTable)dgvGridCar.DataSource; // 데이터 소스의 데이터를 임시 테이블에 넣고
+            dtTemp.Rows[iSelectIndex].Delete();                     // 그 테이블을 삭제하는 형식
         }
-        private void txtCarCode_KeyDown(object sender, KeyEventArgs e)
+
+        public override void Save()
         {
-            if (e.KeyCode == Keys.Enter)
+            base.Save();
+            string sCarCode = string.Empty;
+            string sCarType = string.Empty;
+            string sCarName = string.Empty;
+            string sCarsize = string.Empty;
+            string sCarNum = string.Empty;
+            string sFirstDate = string.Empty;
+            string sCarMaker = string.Empty;
+            string sUseflag = string.Empty;
+            string sRentPrice = string.Empty;
+            string sMakedate = string.Empty;
+
+
+
+            DataTable dataTemp1 = ((DataTable)dgvGridCar.DataSource).GetChanges();// 기존에 데이터 소스에 저장된 내용과 바뀐 부분을 체크하는 함수
+            if (dataTemp1 == null) return; // 바뀐 내용들만 dtTemp에 추가
+
+            if (MessageBox.Show("데이터를 등록 하시겠습니까?", "데이터 저장", MessageBoxButtons.YesNo) == DialogResult.No) return;
+            DBHelper helper = new DBHelper(true);
+            try
             {
-                btnSearch_Click_1(null, null);
+                //트랜잭션 설정, 데이터 테이블의 상태 체크
+                foreach (DataRow drRow in dataTemp1.Rows)
+                {
+                    switch (drRow.RowState)
+                    {
+                        case DataRowState.Deleted:
+                            drRow.RejectChanges();
+                            sCarCode = drRow["CARCODE"].ToString();
+                            helper.ExecuteNoneQuery("SP_4_CAR_D1", CommandType.StoredProcedure, helper.CreateParameter("CARCODE", sCarCode));
+                            break;
+
+                        case DataRowState.Added:
+                            sCarName = drRow["CARNAME"].ToString();
+                            sCarType = drRow["CARTYPE"].ToString();
+                            sUseflag = drRow["USEFLAG"].ToString();
+                            sCarNum = drRow["CARNUM"].ToString();
+                            sCarsize = drRow["CARSIZE"].ToString();
+                            sRentPrice = drRow["RENTPRICE"].ToString();
+                            sFirstDate = drRow["CARREGIST"].ToString();
+                            sFirstDate = sFirstDate.Substring(0, 10);
+                            sCarMaker = drRow["CARMAKER"].ToString();
+                            sMakedate = drRow["MAKEDATE"].ToString();
+
+                            helper.ExecuteNoneQuery("SP_4_CAR_I1", CommandType.StoredProcedure,
+                                                    helper.CreateParameter("CARNAME", sCarName),
+                                                    helper.CreateParameter("CARTYPE", sCarType),
+                                                    helper.CreateParameter("USEFLAG", sUseflag),
+                                                    helper.CreateParameter("CARNUM", sCarNum),
+                                                    helper.CreateParameter("CARSIZE", sCarsize),
+                                                    helper.CreateParameter("CARREGIST", sFirstDate),
+                                                    helper.CreateParameter("CARMAKER", sCarMaker),
+                                                    helper.CreateParameter("RENTPRICE", sRentPrice),
+                                                    helper.CreateParameter("MAKEDATE", sMakedate),
+                                                    helper.CreateParameter("MAKER", Common.LogInID));
+                            if (sCarType == "" || sCarName == "" || sCarNum == "" || sCarsize == "" || sUseflag == "" || sRentPrice == "")
+                            {
+                                MessageBox.Show("'연료', '차종', '차량 번호','사이즈','상태'" + " 는 빈칸으로 남겨둘 수 없습니다.");
+                                return;
+                            }
+                            break;
+
+                        case DataRowState.Modified:
+                            sCarCode = drRow["CARCODE"].ToString();
+                            sCarName = drRow["CARNAME"].ToString();
+                            sCarType = drRow["CARTYPE"].ToString();
+                            sUseflag = drRow["USEFLAG"].ToString();
+                            sCarNum = drRow["CARNUM"].ToString();
+                            sCarsize = drRow["CARSIZE"].ToString();
+                            sRentPrice = drRow["RENTPRICE"].ToString();
+                            sFirstDate = drRow["CARREGIST"].ToString();
+                            sFirstDate=  sFirstDate.Substring(0,10);
+                            sCarMaker = drRow["CARMAKER"].ToString();
+                            helper.ExecuteNoneQuery("SP_4_CAR_U1", CommandType.StoredProcedure,
+                                                    helper.CreateParameter("CARCODE", sCarCode),
+                                                    helper.CreateParameter("CARNAME", sCarName),
+                                                    helper.CreateParameter("CARTYPE", sCarType),
+                                                    helper.CreateParameter("USEFLAG", sUseflag),
+                                                    helper.CreateParameter("CARNUM", sCarNum),
+                                                    helper.CreateParameter("CARSIZE", sCarsize),
+                                                    helper.CreateParameter("RENTPRICE", sRentPrice),
+                                                    helper.CreateParameter("CARREGIST", sFirstDate),
+                                                    helper.CreateParameter("CARMAKER", sCarMaker),
+                                                    helper.CreateParameter("EDITOR", Common.LogInID));
+                            break;
+
+                            
+                    }
+                }
+                //성공 시 DB COMMIT
+                helper.Commit();
+                //메세지
+                MessageBox.Show("정상적으로 등록 하였습니다.");
+
+                //재조회
+                Inquire();
             }
+            catch (Exception ex)
+            {
+                //트랜잭션 롤백
+                helper.Rollback();
+                // 메세지
+                MessageBox.Show(ex.ToString());
+                MessageBox.Show("데이터 등록에 실패하였습니다.");
+            }
+            finally
+            {
+                //DB Close
+                helper.Close();
+            }
+
+
         }
-        #endregion
 
         #region IMG
+        private SqlConnection Connect = null; // 접속 정보 객체 명명
+        // 접속 주소 
+        private string strConn = "Data Source=222.235.141.8; Initial Catalog=AppDev;User ID=kfqs1;Password=1234";
         private void btnLoadPic_Click(object sender, EventArgs e)
         {
             string sImagefile = string.Empty;
@@ -375,160 +420,5 @@ namespace DEV_Form
         }
         #endregion
 
-        #region Interface
-
-        public override void Inquire()
-        {
-            base.Inquire();
-            DBHelper helper = new DBHelper(false);
-            try
-            {
-                String sCarCode = txtCarCode.Text;
-                String sCarType = "";
-                String sCarName = txtCarName.Text;
-                String sCarSize = cboRentCost.Text;
-                String sUseFlag = cboRentCost.Text;
-                String sStartDate = dtpStart.Text;
-                String sEndDate = dtpEnd.Text;
-
-
-                DataTable dtTemp = new DataTable();
-                dtTemp = helper.FillTable("SP_4_Car_S1", CommandType.StoredProcedure,
-                         helper.CreateParameter("CARCODE", sCarCode),
-                         helper.CreateParameter("CARNAME", sCarName),
-                         helper.CreateParameter("CARSIZE", sCarSize),
-                         helper.CreateParameter("CARTYPE", sCarType)
-
-                         );
-
-                if (dtTemp.Rows.Count == 0)
-                {
-                    dgvGridCar.DataSource = null;
-                    MessageBox.Show("조회할 데이터가 없습니다.");
-                }
-                else
-                {
-                    //그리드 뷰에 데이터 삽입
-                    dgvGridCar.DataSource = dtTemp;
-                }
-            }
-
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.ToString());
-            }
-
-            finally { helper.Close(); }
-        }
-        public override void DoNew()
-        {
-            base.DoNew();
-            DataRow dr = ((DataTable)dgvGridCar.DataSource).NewRow();
-            ((DataTable)dgvGridCar.DataSource).Rows.Add(dr);   // 그리드 뷰에 테이블을 추가하는 것이 아닌
-                                                               // 데이터 소스를 추가하고 그것을 가져오는 방식
-        }
-
-        public override void Delete()
-        {
-            base.Delete();
-            if (dgvGridCar.Rows.Count == 0) return;
-            int iSelectIndex = dgvGridCar.CurrentCell.RowIndex;
-            DataTable dtTemp = (DataTable)dgvGridCar.DataSource; // 데이터 소스의 데이터를 임시 테이블에 넣고
-            dtTemp.Rows[iSelectIndex].Delete();                     // 그 테이블을 삭제하는 형식
-        }
-
-        public override void Save()
-        {
-            base.Save();
-            string sCarCode = string.Empty; 
-            string sCarType = string.Empty; 
-            string sCarName = string.Empty; 
-            string sCarsize = string.Empty; 
-            string sCarNum = string.Empty; 
-            string sFirstDate = string.Empty; 
-            string sCarMaker = string.Empty; 
-
-            DataTable dataTemp1 = ((DataTable)dgvGridCar.DataSource).GetChanges();// 기존에 데이터 소스에 저장된 내용과 바뀐 부분을 체크하는 함수
-            if (dataTemp1 == null) return; // 바뀐 내용들만 dtTemp에 추가
-
-            if (MessageBox.Show("데이터를 등록 하시겠습니까?", "데이터 저장", MessageBoxButtons.YesNo) == DialogResult.No) return;
-            DBHelper helper = new DBHelper(true);
-            try
-            {
-                //트랜잭션 설정, 데이터 테이블의 상태 체크
-                foreach (DataRow drRow in dataTemp1.Rows)
-                {
-                    switch (drRow.RowState)
-                    {
-                        case DataRowState.Deleted:
-                            drRow.RejectChanges();
-                            sCarCode = drRow["CARCODE"].ToString();
-                            helper.ExecuteNoneQuery("SP_4_CAR_D1", CommandType.StoredProcedure, helper.CreateParameter("CARCODE", sCarCode));
-                            break;
-
-                        case DataRowState.Added:
-                            sCarName = drRow["CARNAME"].ToString();
-                            sCarType = drRow["CARTYPE"].ToString();
-                            sCarNum = drRow["CARNUM"].ToString();
-                            sCarsize = drRow["CARSIZE"].ToString();
-                            sCarMaker = drRow["CARMAKER"].ToString();
-                            sFirstDate = drRow["CARREGIST"].ToString();
-
-                            helper.ExecuteNoneQuery("SP_4_CAR_I1", CommandType.StoredProcedure,
-                                                    helper.CreateParameter("CARNAME", sCarName),
-                                                    helper.CreateParameter("CARTYPE", sCarType),
-                                                    helper.CreateParameter("CARNUM", sCarNum),
-                                                    helper.CreateParameter("CARSIZE", sCarsize),
-                                                    helper.CreateParameter("CARREGIST", sFirstDate),
-                                                    helper.CreateParameter("CARMAKER", sCarMaker),
-                                                    helper.CreateParameter("MAKER", Common.LogInID)
-                                                    );
-                            break;
-
-                        case DataRowState.Modified:
-                            sCarCode = drRow["CARCODE"].ToString();
-                            sCarName = drRow["CARNAME"].ToString();
-                            sCarType = drRow["CARTYPE"].ToString();
-                            sCarNum = drRow["CARNUM"].ToString();
-                            sCarsize = drRow["CARSIZE"].ToString();
-                            sCarMaker = drRow["CARMAKER"].ToString();
-                            helper.ExecuteNoneQuery("SP_4_CAR_U1", CommandType.StoredProcedure,
-                                                    helper.CreateParameter("CARCODE", sCarCode),
-                                                    helper.CreateParameter("CARNAME", sCarName),
-                                                    helper.CreateParameter("CARTYPE", sCarType),
-                                                    helper.CreateParameter("CARNUM", sCarNum),
-                                                    helper.CreateParameter("CARSIZE", sCarsize),
-                                                    helper.CreateParameter("CARMAKER", sCarMaker),
-                                                    helper.CreateParameter("EDITOR", Common.LogInID)
-                                                    );
-                            break;
-
-                    }
-                }
-                //성공 시 DB COMMIT
-                helper.Commit();
-                //메세지
-                MessageBox.Show("정상적으로 등록 하였습니다.");
-
-                //재조회
-                Inquire();
-            }
-            catch (Exception ex)
-            {
-                //트랜잭션 롤백
-                helper.Rollback();
-                // 메세지
-                MessageBox.Show(ex.ToString());
-                MessageBox.Show("데이터 등록에 실패하였습니다.");
-            }
-            finally
-            {
-                //DB Close
-                helper.Close();
-            }
-            #endregion
-
-
-        }
     }
 }

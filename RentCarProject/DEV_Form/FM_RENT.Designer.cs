@@ -276,6 +276,7 @@ namespace DEV_Form
             this.btnPicSave.TabIndex = 4;
             this.btnPicSave.Text = "저장";
             this.btnPicSave.UseVisualStyleBackColor = true;
+            this.btnPicSave.Click += new System.EventHandler(this.btnPicSave_Click);
             // 
             // btnLoadPic
             // 
@@ -285,6 +286,7 @@ namespace DEV_Form
             this.btnLoadPic.TabIndex = 5;
             this.btnLoadPic.Text = "이미지 불러오기";
             this.btnLoadPic.UseVisualStyleBackColor = true;
+            this.btnLoadPic.Click += new System.EventHandler(this.btnLoadPic_Click);
             // 
             // picCtrImg
             // 
@@ -295,6 +297,7 @@ namespace DEV_Form
             this.picCtrImg.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.picCtrImg.TabIndex = 2;
             this.picCtrImg.TabStop = false;
+            this.picCtrImg.Click += new System.EventHandler(this.picCtrImg_Click);
             // 
             // groupBox4
             // 
